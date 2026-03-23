@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>dashboard KPI Dozer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #111827;
+            --card-bg: #1f2937;
+            --soft-pink: #f472b6;
+            --soft-green: #2dd4bf;
+            --accent-blue: #60a5fa;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-main);
+            color: #f3f4f6;
+            font-family: 'Prompt', sans-serif;
+            letter-spacing: 0.01em;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            min-height: 100vh;
+            padding-bottom: 32px;
+        }
+
+        .cute-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+            transition: all 0.25s ease;
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .progress-container {
+            height: 10px;
+            background: #374151;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 1s ease-out;
+        }
+
+        .glass-header {
+            background: rgba(31, 41, 55, 0.82);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .standard-badge {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .custom-button {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            transition: 0.2s ease;
+        }
+
+        .custom-button:active {
+            transform: scale(0.98);
+        }
+
+        .table-row-cute {
+            background: rgba(55, 65, 81, 0.35);
+        }
+
+        .table-row-cute:hover {
+            background: rgba(55, 65, 81, 0.6);
+        }
+
+        .date-chip {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            color: #94a3b8;
+            display: inline-block;
+        }
+
+        .status-pill {
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #2dd4bf;
+            box-shadow: 0 0 12px rgba(45, 212, 191, 0.6);
+        }
+
+        .wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 18px;
+        }
+
+        table {
+            min-width: 760px;
+        }
+
+        @media (max-width: 1024px) {
+            .wrapper {
+                max-width: 100%;
+                padding: 16px;
+            }
+
+            .kpi-value {
+                font-size: 2.2rem;
+            }
+
+            .ipad-stack {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .ipad-stack {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .topbar-right {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .custom-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="glass-header sticky top-0 z-50 px-4 py-4 mb-6">
+        <div class="wrapper">
+            <div class="topbar flex justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">dashboard KPI Dozer</h1>
+                        <p class="text-xs text-slate-400 font-medium">ระบบดึงข้อมูลอัตโนมัติจาก Google Sheet</p>
+                    </div>
+                </div>
+
+                <div class="topbar-right flex items-center gap-3 flex-wrap">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="loading-dot"></span>
+                        <span id="syncStatus">กำลังเชื่อมต่อข้อมูล</span>
+                    </div>
+
+                    <div class="text-xs text-slate-500 bg-white/5 px-3 py-2 rounded-full">
+                        อัปเดตล่าสุด: <span id="lastUpdated">-</span>
+                    </div>
+
+                    <button id="refreshBtn" class="custom-button text-white px-5 py-3 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg hover:opacity-90">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5.636 18.364A9 9 0 1018.364 5.636" />
+                        </svg>
+                        รีเฟรชข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="wrapper">
+        <div class="grid ipad-stack grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div id="card-prod" class="cute-card p-7 border-t-4 border-slate-700">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-slate-400 text-xs font-bold uppercase tracking-widest">Productivity</span>
+                    <span class="standard-badge">มาตรฐาน: ≥ 95%</span>
+                </div>
+                <div class="kpi-value mb-2" id="val-prod">--%</div>
+                <div class="progress-container">
+                    <div id="bar-prod" class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="card-mheff" class="cute-card p-7 border-t-4 border-slate-700">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-slate-400 text-xs font-bold uppercase tracking-widest">MH Efficiency</span>
+                    <span class="standard-badge">มาตรฐาน: ≥ 95%</span>
+                </div>
+                <div class="kpi-value mb-2" id="val-mheff">--%</div>
+                <div class="progress-container">
+                    <div id="bar-mheff" class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cute-card p-6 mb-8">
+            <h3 class="text-lg font-semibold flex items-center gap-2 mb-6">
+                <span class="w-2 h-2 rounded-full bg-indigo-400"></span> แนวโน้ม Productivity
+            </h3>
+            <div class="h-[340px] md:h-[380px]">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <div class="cute-card p-6">
+            <h3 class="text-lg font-semibold mb-6">บันทึกสถานะการผลิต</h3>
+            <div class="table-wrap">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-slate-500 uppercase text-[10px] tracking-widest">
+                        <tr class="border-b border-white/5">
+                            <th class="pb-4 px-4">เลขที่ใบสั่งผลิต</th>
+                            <th class="pb-4">ช่วงเวลา</th>
+                            <th class="pb-4">Productivity</th>
+                            <th class="pb-4">MH Efficiency</th>
+                            <th class="pb-4 text-center">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-white/5"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        const API_URL = "https://script.google.com/macros/s/AKfycbw3OPytEZL3Cf6Kh6whxXoA0SIAZLFmeiTfV7nyveB1nCYjryCyIz4jv_-Xr-Uq4hgm/exec";
+        const AUTO_REFRESH_MS = 60 * 60 * 1000;
+
+        let charts = {};
+
+        const COLORS = {
+            pink: "#f472b6",
+            green: "#2dd4bf",
+            blue: "#60a5fa",
+            slate: "#94a3b8",
+            grid: "rgba(255, 255, 255, 0.05)"
+        };
+
+        const STDS = {
+            prod: 95,
+            mh: 95
+        };
+
+        const syncStatusEl = document.getElementById("syncStatus");
+        const lastUpdatedEl = document.getElementById("lastUpdated");
+        const refreshBtn = document.getElementById("refreshBtn");
+
+        refreshBtn.addEventListener("click", () => {
+            loadGoogleSheetData(true);
+        });
+
+        function parseNum(val) {
+            if (!val) return 0;
+            return parseFloat(String(val).replace(/[%, ]/g, "")) || 0;
+        }
+
+        function formatDateTime(date) {
+            return new Intl.DateTimeFormat("th-TH", {
+                dateStyle: "short",
+                timeStyle: "short"
+            }).format(date);
+        }
+
+        function setSyncStatus(text, isError = false) {
+            syncStatusEl.textContent = text;
+            syncStatusEl.className = isError ? "text-pink-400" : "text-slate-400";
+        }
+
+        function updateCard(type, val, target) {
+            const el = document.getElementById(`val-${type}`);
+            const bar = document.getElementById(`bar-${type}`);
+            const card = document.getElementById(`card-${type}`);
+            const isPass = parseFloat(val) >= target;
+            const color = isPass ? COLORS.green : COLORS.pink;
+
+            el.innerText = `${val}%`;
+            el.style.color = color;
+            bar.style.width = `${Math.min(parseFloat(val), 100)}%`;
+            bar.style.backgroundColor = color;
+            bar.style.boxShadow = `0 0 15px ${color}44`;
+            card.style.borderColor = color;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById("table-body");
+
+            tbody.innerHTML = data.map(d => {
+                const isPass = d.prod >= STDS.prod && d.mh >= STDS.mh;
+
+                return `
+                    <tr class="table-row-cute">
+                        <td class="py-4 px-4 font-bold text-slate-200">${escapeHtml(d.id)}</td>
+                        <td class="py-4"><span class="date-chip">${escapeHtml(d.start)} - ${escapeHtml(d.end)}</span></td>
+                        <td class="py-4 font-bold ${d.prod >= STDS.prod ? 'text-teal-400' : 'text-pink-400'}">${d.prod}%</td>
+                        <td class="py-4 font-bold ${d.mh >= STDS.mh ? 'text-teal-400' : 'text-pink-400'}">${d.mh}%</td>
+                        <td class="py-4 text-center">
+                            <span class="status-pill ${isPass ? 'bg-teal-500/10 text-teal-400' : 'bg-pink-500/10 text-pink-400'}">
+                                ${isPass ? 'ผ่าน' : 'ไม่ผ่าน'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function renderCharts(data) {
+            const labels = data.map(d => (d.id || "").replace("DOZER_", ""));
+
+            if (charts.trend) charts.trend.destroy();
+
+            charts.trend = new Chart(document.getElementById("trendChart"), {
+                type: "line",
+                data: {
+                    labels,
+                    datasets: [{
+                        label: "Productivity",
+                        data: data.map(d => d.prod),
+                        borderColor: COLORS.blue,
+                        backgroundColor: COLORS.blue + "22",
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 20, right: 12, left: 4, bottom: 4 }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            align: "top",
+                            anchor: "end",
+                            color: COLORS.blue,
+                            font: { weight: "bold", size: 11 },
+                            formatter: v => v + "%"
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 120,
+                            grid: { color: COLORS.grid },
+                            ticks: {
+                                color: COLORS.slate,
+                                font: { size: 11 }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: COLORS.slate,
+                                font: { size: 11 },
+                                maxRotation: 0,
+                                minRotation: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateUI(data) {
+            const avg = {
+                prod: (data.reduce((s, x) => s + x.prod, 0) / data.length).toFixed(1),
+                mh: (data.reduce((s, x) => s + x.mh, 0) / data.length).toFixed(1)
+            };
+
+            updateCard("prod", avg.prod, STDS.prod);
+            updateCard("mheff", avg.mh, STDS.mh);
+            renderTable(data);
+            renderCharts(data);
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function loadGoogleSheetData(isManual = false) {
+            try {
+                setSyncStatus(isManual ? "กำลังรีเฟรชข้อมูล..." : "กำลังโหลดข้อมูล...");
+                refreshBtn.disabled = true;
+                refreshBtn.classList.add("opacity-60", "cursor-not-allowed");
+
+                const response = await fetch(API_URL + "?t=" + Date.now());
+                if (!response.ok) {
+                    throw new Error(`โหลดข้อมูลไม่สำเร็จ (${response.status})`);
+                }
+
+                const result = await response.json();
+
+                if (!result.success || !result.data || result.data.length < 2) {
+                    throw new Error(result.message || "ไม่พบข้อมูลในชีต");
+                }
+
+                const rows = result.data;
+
+                const idx = {
+                    id: 0,
+                    start: 2,
+                    end: 3,
+                    prod: 8,
+                    mh: 9
+                };
+
+                const data = rows.slice(1)
+                    .filter(cols => cols.some(cell => String(cell).trim() !== ""))
+                    .map(cols => ({
+                        id: cols[idx.id] || "N/A",
+                        start: cols[idx.start] || "-",
+                        end: cols[idx.end] || "-",
+                        prod: parseNum(cols[idx.prod]),
+                        mh: parseNum(cols[idx.mh])
+                    }));
+
+                if (!data.length) {
+                    throw new Error("ไม่มีข้อมูลสำหรับแสดงผล");
+                }
+
+                updateUI(data);
+                lastUpdatedEl.textContent = formatDateTime(new Date());
+                setSyncStatus("เชื่อมต่อ Google Sheet สำเร็จ");
+            } catch (error) {
+                console.error(error);
+                setSyncStatus("เกิดข้อผิดพลาด: " + error.message, true);
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.classList.remove("opacity-60", "cursor-not-allowed");
+            }
+        }
+
+        loadGoogleSheetData();
+        setInterval(() => loadGoogleSheetData(false), AUTO_REFRESH_MS);
+    </script>
+</body>
+</html>
